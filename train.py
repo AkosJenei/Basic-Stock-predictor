@@ -1,42 +1,47 @@
 # train.py
 
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from model import *
+from sklearn.metrics import (
+    confusion_matrix,
+    classification_report,
+    accuracy_score
+)
+import matplotlib.pyplot as plt
 
 from data_processing import DataProcessor
 from x_y_arrays import x_y_arrays
-from model import create_model
+from model import *
 from quantization import Quantization
 
 def main():
-    CSV_PATH   = "historical_data/XAUUSD_historical_data_1h.csv"
-    N_BITS     = 40
-    WINDOW     = 3
+    CSV_PATH   = "historical_data/XAUUSD_15m_historical_data.csv"
+    N_datapoints = 5000
+    N_BITS     = 100
+    WINDOW     = 2
     TEST_SIZE  = 0.2
     BATCH_SIZE = 64
     EPOCHS     = 100
 
+    # 1) Load & quantize
     dp = DataProcessor()
-    dp.read_csv(CSV_PATH)
-    labels = dp.add_quantized_labels(n_bits=N_BITS)  
-    one_hot = np.eye(N_BITS, dtype=int)[labels]  
+    dp.read_csv(CSV_PATH, N_datapoints)
+    labels  = dp.add_quantized_labels(n_bits=N_BITS)  
+    one_hot = np.eye(N_BITS, dtype=int)[labels]  # shape (T, 40)
 
+    # 2) Build sequences & split
     xy = x_y_arrays(
-        df=one_hot, 
-        target=labels, 
-        n=WINDOW, 
-        test_size=TEST_SIZE, 
+        df=one_hot,
+        target=labels,
+        n=WINDOW,
+        test_size=TEST_SIZE,
         shuffle=True,
         random_state=42
     )
     X_train, X_test, Y_train, Y_test = xy.get_train_test()
 
+    print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}\n")
 
-    print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
-    print()
-
+    # 3) Build model
     model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
     model.summary()
 
@@ -46,8 +51,9 @@ def main():
         restore_best_weights=True
     )
 
+    # 4) Train
     model.fit(
-        X_train, 
+        X_train,
         Y_train,
         validation_data=(X_test, Y_test),
         epochs=EPOCHS,
@@ -55,6 +61,32 @@ def main():
         callbacks=[early],
         verbose=1
     )
+
+    # 5) Evaluate
+    # Predict class probabilities then take argmax
+    y_pred_probs = model.predict(X_test, batch_size=BATCH_SIZE, verbose=0)
+    y_pred       = np.argmax(y_pred_probs, axis=1)
+    y_true       = np.argmax(Y_test,      axis=1)
+
+    acc = accuracy_score(y_true, y_pred)
+    print(f"\nTest accuracy: {acc:.4f}\n")
+
+    cm = confusion_matrix(y_true, y_pred)
+    print("Confusion Matrix:")
+    print(cm, "\n")
+
+    print("Classification Report:")
+    print(classification_report(y_true, y_pred, digits=4))
+
+    # 5) Plot confusion matrix
+    plt.figure(figsize=(8, 6))
+    plt.imshow(cm, aspect='auto')
+    plt.title('Confusion Matrix')
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    plt.colorbar()
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()

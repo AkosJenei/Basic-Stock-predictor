@@ -6,7 +6,7 @@ class DataProcessor:
     def __init__(self, dataframe=None):
         self.dataframe = dataframe
 
-    def read_csv(self, file_path):
+    def read_csv(self, file_path, N_datapoints):
         self.dataframe = pd.read_csv(file_path)
         self.dataframe = self.dataframe.filter(
             ["open", "high", "low", "close", "tick_volume"]
@@ -17,6 +17,7 @@ class DataProcessor:
             "close": "Close",
             "tick_volume": "Volume"
         })
+        self.dataframe = self.dataframe[-N_datapoints:]
         return self.dataframe
 
     def get_dataframe(self):

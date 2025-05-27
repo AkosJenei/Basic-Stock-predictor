@@ -12,9 +12,9 @@ data_adapter._is_distributed_dataset = _is_distributed_dataset
 
 def create_model(input_timesteps: int, n_classes: int) -> Sequential:
     model = Sequential([
-        LSTM(512, activation="relu", input_shape=(input_timesteps, n_classes), return_sequences=True),
-        LSTM(256, activation="relu", return_sequences=False),
-        Dense(128, activation="relu", kernel_regularizer=l2(0.000124)),
+        LSTM(256, activation="relu", input_shape=(input_timesteps, n_classes), return_sequences=True),
+        LSTM(128, activation="relu", return_sequences=False),
+        Dense(64, activation="relu", kernel_regularizer=l2(0.000124)),
         Dense(64, activation="relu", kernel_regularizer=l2(0.000124)),
         Dropout(0.2),
         Dense(n_classes, activation="softmax")
