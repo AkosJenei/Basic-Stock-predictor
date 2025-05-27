@@ -1,18 +1,60 @@
-from model import *
-from x_y_arrays import *
-from data_processing import *
+# train.py
 
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from model import *
+
+from data_processing import DataProcessor
+from x_y_arrays import x_y_arrays
+from model import create_model
+from quantization import Quantization
 
 def main():
-    # Load your DataFrame here
-    df = ...  # Replace with actual DataFrame loading code
-    target = ...  # Replace with actual target column
+    CSV_PATH   = "historical_data/XAUUSD_historical_data_1h.csv"
+    N_BITS     = 40
+    WINDOW     = 3
+    TEST_SIZE  = 0.2
+    BATCH_SIZE = 64
+    EPOCHS     = 100
 
-    # Create x_y_arrays instance
-    data = x_y_arrays(df, target)
+    dp = DataProcessor()
+    dp.read_csv(CSV_PATH)
+    labels = dp.add_quantized_labels(n_bits=N_BITS)  
+    one_hot = np.eye(N_BITS, dtype=int)[labels]  
 
-    # Get training and testing data
-    x_train, x_test, y_train, y_test = data.get_train_test()
-    model = create_model()
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
-    model.fit(x_train, y_train, batch_size=128, epochs=50, verbose=1, validation_split=0.2, callbacks=[early_stopping])
+    xy = x_y_arrays(
+        df=one_hot, 
+        target=labels, 
+        n=WINDOW, 
+        test_size=TEST_SIZE, 
+        shuffle=True,
+        random_state=42
+    )
+    X_train, X_test, Y_train, Y_test = xy.get_train_test()
+
+
+    print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
+    print()
+
+    model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
+    model.summary()
+
+    early = EarlyStopping(
+        monitor='val_loss',
+        patience=10,
+        restore_best_weights=True
+    )
+
+    model.fit(
+        X_train, 
+        Y_train,
+        validation_data=(X_test, Y_test),
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+        callbacks=[early],
+        verbose=1
+    )
+
+if __name__ == "__main__":
+    main()
