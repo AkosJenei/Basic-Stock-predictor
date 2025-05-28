@@ -17,7 +17,7 @@ class DataProcessor:
             "close": "Close",
             "tick_volume": "Volume"
         })
-        self.dataframe = self.dataframe[-N_datapoints:]
+        self.dataframe = self.dataframe[-N_datapoints:-2000]
         return self.dataframe
 
     def get_dataframe(self):
@@ -26,7 +26,7 @@ class DataProcessor:
     def get_close_prices(self):
         return self.dataframe["Close"].values
 
-    def add_quantized_labels(self, n_bits=40):
+    def add_quantized_labels(self, n_bits=50):
         close_prices = self.get_close_prices()
         quantizer = Quantization(n_bits=n_bits)
         labels = quantizer.fit_transform(close_prices)

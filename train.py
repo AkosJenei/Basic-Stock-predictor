@@ -33,10 +33,10 @@ def build_train_model(X_train, Y_train, X_test, Y_test, N_BITS, WINDOW, BATCH_SI
     )
     return model
 
-CSV_PATH   = "historical_data/XAUUSD_15m_historical_data.csv"
+CSV_PATH   = "historical_data/XAUUSD_1h_historical_data.csv"
 N_datapoints = 5000
-N_BITS     = 100
-WINDOW     = 2
+N_BITS     = 50
+WINDOW     = 3
 TEST_SIZE  = 0.2
 BATCH_SIZE = 64
 EPOCHS     = 100
@@ -77,12 +77,12 @@ print("Classification Report:")
 print(classification_report(y_true, y_pred, digits=4))
 
 
-plt.figure(figsize=(8, 6))
-plt.imshow(cm, aspect='auto')
-plt.title('Confusion Matrix')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
-plt.colorbar()
-plt.tight_layout()
-plt.show()
+#plt.figure(figsize=(8, 6))
+#plt.imshow(cm, aspect='auto')
+#plt.title('Confusion Matrix')
+#plt.xlabel('Predicted Label')
+#plt.ylabel('True Label')
+#plt.colorbar()
+#plt.tight_layout()
+#plt.show()
 
