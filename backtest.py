@@ -10,7 +10,7 @@ from sklearn.metrics import (
 from tensorflow.python.keras.utils.np_utils import to_categorical
 from tensorflow.python.keras.callbacks import EarlyStopping
 from data_processing import DataProcessor
-from model import create_model
+from train import *
 
 # -----------------------------------------------------------------------------
 # Config
@@ -42,36 +42,6 @@ closes = df["Close"].values
 labels = dp.add_quantized_labels(n_bits=N_BITS)
 one_hot = np.eye(N_BITS, dtype=int)[labels]  # shape (T, N_BITS)
 
-# build sequences and aligned labels
-X = []
-Y = labels[WINDOW:]
-for i in range(len(one_hot) - WINDOW):
-    X.append(one_hot[i : i + WINDOW])
-X = np.stack(X, axis=0)
-Y = np.array(Y)
-
-# train/test split (chronological)
-split = int(len(X) * TRAIN_RATIO)
-X_train, X_test = X[:split], X[split:]
-Y_train, Y_test = Y[:split], Y[split:]
-
-# to categorical
-Y_train_cat = to_categorical(Y_train, num_classes=N_BITS)
-Y_test_cat  = to_categorical(Y_test,  num_classes=N_BITS)
-
-# -----------------------------------------------------------------------------
-# 2) Build & train model
-# -----------------------------------------------------------------------------
-model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
-early = EarlyStopping(monitor="val_loss", patience=PATIENCE, restore_best_weights=True)
-model.fit(
-    X_train, Y_train_cat,
-    validation_data=(X_test, Y_test_cat),
-    epochs=EPOCHS, batch_size=BATCH_SIZE,
-    callbacks=[early],
-    verbose=1
-)
-
 # -----------------------------------------------------------------------------
 # 3) Predict & generate signals
 # -----------------------------------------------------------------------------
@@ -89,7 +59,7 @@ for t in range(1, len(y_pred_labels)):
 
 # align prices for test period
 # X_test start corresponds to bar index = WINDOW + split
-idx_offset = WINDOW + split
+idx_offset = WINDOW + len(X_train)
 entry_idxs = np.arange(idx_offset, idx_offset + len(signals) - HOLD_BARS)
 exit_idxs  = entry_idxs + HOLD_BARS
 
