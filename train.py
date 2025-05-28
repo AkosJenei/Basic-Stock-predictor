@@ -13,6 +13,27 @@ from x_y_arrays import x_y_arrays
 from model import *
 from quantization import Quantization
 
+def build_train_model(X_train, Y_train, X_test, Y_test, N_BITS, WINDOW, BATCH_SIZE, EPOCHS):
+    model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
+    model.summary()
+
+    early = EarlyStopping(
+        monitor='val_loss',
+        patience=10,
+        restore_best_weights=True
+    )
+
+    model.fit(
+        X_train,
+        Y_train,
+        validation_data=(X_test, Y_test),
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+        callbacks=[early],
+        verbose=1
+    )
+    return model
+
 def main():
     CSV_PATH   = "historical_data/XAUUSD_15m_historical_data.csv"
     N_datapoints = 5000
@@ -41,26 +62,7 @@ def main():
 
     print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}\n")
 
-    # 3) Build model
-    model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
-    model.summary()
-
-    early = EarlyStopping(
-        monitor='val_loss',
-        patience=10,
-        restore_best_weights=True
-    )
-
-    # 4) Train
-    model.fit(
-        X_train,
-        Y_train,
-        validation_data=(X_test, Y_test),
-        epochs=EPOCHS,
-        batch_size=BATCH_SIZE,
-        callbacks=[early],
-        verbose=1
-    )
+    model = build_train_model()
 
     # 5) Evaluate
     # Predict class probabilities then take argmax
