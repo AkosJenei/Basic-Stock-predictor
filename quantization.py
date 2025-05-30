@@ -1,7 +1,7 @@
 import numpy as np
 
 class Quantization:
-    def __init__(self, n_bits=50):
+    def __init__(self, n_bits=500):
 
         self.n_bits = n_bits
         self.bin_edges = None
