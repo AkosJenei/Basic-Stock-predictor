@@ -14,13 +14,13 @@ CSV_PATH        = "historical_data/XAUUSD_4h_historical_data.csv"
 N_DATAPOINTS    = 2000    # total rows in this slice
 N_TESTPOINTS    = 500     # last 500 rows for backtest
 WINDOW          = 3
-OFFSET          = 27000       # start row of the 5k-slice in the full CSV
+OFFSET          = 22000      # start row of the 5k-slice in the full CSV
 
 INITIAL_CAP     = 5_000.0
 LEVERAGE        = 100.0 
 RISK_PER_TRADE  = 0.30
-STOP_LOSS_PCT   = 0.002
-TAKE_PROFIT_PCT = 0.002
+STOP_LOSS_PCT   = 1#0.002
+TAKE_PROFIT_PCT = 1#0.002
 
 QUANTIZER_PATH  = "quantizer.pkl"
 
@@ -120,16 +120,16 @@ print(f"Max Drawdown:     {max_dd:.2%}")
 # 5) Plots
 # -----------------------------------------------------------------------------
 plt.figure(figsize=(10,4))
-plt.plot(equity_curve, label="Equity Curve")
-plt.title("Equity Curve"); plt.grid(); plt.legend()
+plt.plot(equity_curve, label="Equity Curve for XAUUSD")
+plt.title("Equity Curve for XAUUSD"); plt.grid(); plt.legend()
 
 plt.figure(figsize=(10,4))
 plt.plot(equity_curve/np.maximum.accumulate(equity_curve) - 1,
-         color="red", label="Drawdown")
-plt.title("Drawdown Curve"); plt.grid(); plt.legend()
+         color="red", label="Drawdown for XAUUSD")
+plt.title("Drawdown Curve for XAUUSD"); plt.grid(); plt.legend()
 
 plt.figure(figsize=(8,4))
 plt.hist(trade_returns, bins=50)
-plt.title("Distribution of Trade Returns"); plt.grid()
+plt.title("Distribution of Trade Returns for XAUUSD"); plt.grid()
 
 plt.show()

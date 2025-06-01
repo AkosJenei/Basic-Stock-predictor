@@ -1,8 +1,6 @@
-# train.py
-
 import numpy as np
 import pickle
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
 from data_processing import DataProcessor
@@ -20,7 +18,7 @@ WINDOW        = 3
 TEST_SIZE     = 0.2     # validation split within training slice
 BATCH_SIZE    = 64
 EPOCHS        = 100
-OFFSET        = 27000      # start row of our 5k-window in the full CSV
+OFFSET        = 22000      # start row of our 5k-window in the full CSV
 N_BITS        = 25
 
 QUANTIZER_OUT = "quantizer.pkl"
@@ -88,8 +86,23 @@ y_true  = np.argmax(Y_val, axis=1)
 acc = accuracy_score(y_true, y_pred)
 print(f"\nValidation accuracy: {acc:.4f}\n")
 
+# Force confusion matrix to include all N_BITS classes
+all_labels = np.arange(N_BITS)
+conf_mat = confusion_matrix(y_true, y_pred, labels=all_labels)
 print("Confusion Matrix:")
-print(confusion_matrix(y_true, y_pred), "\n")
+print(conf_mat, "\n")
 
 print("Classification Report:")
-print(classification_report(y_true, y_pred, digits=4))
+print(classification_report(y_true, y_pred, labels=all_labels, digits=4))
+
+# -----------------------------------------------------------------------------
+# 6) Plot confusion matrix
+# -----------------------------------------------------------------------------
+plt.figure(figsize=(8, 6))
+plt.imshow(conf_mat, aspect='auto')
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.colorbar()
+plt.tight_layout()
+plt.show()
