@@ -21,6 +21,10 @@ It includes:
 - **`train.py`** – Training script for fitting the model.
 - **`backtest.py`** – Model backtesting and evaluation script.
 
+## Historical data
+
+Historical data files, can be found in the historical_data folder. This strategy can be tested on various forex currencies, and commodities.The 4 Hour timeframe seem to work well, the parameters for that will be shown in the backtesting section.
+
 ## Research Context
 
 This project was developed as part of one of my introductory research at the Budapest University of Technology and Economics (BME) in the field of Financial Computing. The goal is to explore novel approaches for quantizing financial time series and leveraging deep learning models for improved prediction and strategy development.
