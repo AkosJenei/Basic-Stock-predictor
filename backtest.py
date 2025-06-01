@@ -1,5 +1,3 @@
-# backtest.py
-
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,61 +45,125 @@ TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
 start_idx  = TRAIN_SIZE + WINDOW   # first index where we backtest
 
 # -----------------------------------------------------------------------------
-# 3) Real-time backtest loop on last 500 rows
+# 3) Pre-allocate pred_dirs to match true_dirs length
 # -----------------------------------------------------------------------------
-capital       = INITIAL_CAP
-equity_curve  = [capital]
-trade_returns = []
-signals_list  = []
-prev_label    = None
+test_labels     = labels[TRAIN_SIZE:]                  # length = N_TESTPOINTS = 500
+true_dirs_full  = np.sign(np.diff(test_labels))        # length = 499
+true_dirs       = true_dirs_full[WINDOW:]              # length = 496
+N_PREDICT       = len(true_dirs)                       # 496
 
-for t in range(start_idx, N_DATAPOINTS - 1):
+pred_dirs       = np.zeros(N_PREDICT, dtype=int)
+capital         = INITIAL_CAP
+equity_curve    = [capital]
+trade_returns   = []
+prev_label      = None
+
+t = start_idx
+while t < (N_DATAPOINTS - 1):
+    # 3.a) Form input for the model at time t
     X_in   = one_hot[t-WINDOW:t][np.newaxis, :, :]
     y_prob = model.predict(X_in, verbose=0)[0]
     lbl    = int(np.argmax(y_prob))
 
-    # generate +1/−1/0 signal
+    # 3.b) Generate +1/−1/0 signal based on label change
     if prev_label is None:
         signal = 0
     else:
         signal = +1 if lbl > prev_label else -1 if lbl < prev_label else 0
 
-    signals_list.append(signal)
+    # 3.c) Store signal into pred_dirs at index i
+    i = t - start_idx
+    if 0 <= i < N_PREDICT:
+        pred_dirs[i] = signal
     prev_label = lbl
 
-    # execute trade when signal ≠ 0
-    if signal != 0:
-        entry = closes[t]
-        tp    = entry*(1+TAKE_PROFIT_PCT) if signal>0 else entry*(1-TAKE_PROFIT_PCT)
-        sl    = entry*(1-STOP_LOSS_PCT)   if signal>0 else entry*(1+STOP_LOSS_PCT)
+    # 3.d) If no signal, just advance one bar
+    if signal == 0:
+        equity_curve.append(capital)
+        t += 1
+        continue
 
-        hi, lo, nxt = highs[t+1], lows[t+1], closes[t+1]
-        if   signal>0 and hi  >= tp: exit_price = tp
-        elif signal<0 and lo  <= tp: exit_price = tp
-        elif signal>0 and lo  <= sl: exit_price = sl
-        elif signal<0 and hi  >= sl: exit_price = sl
-        else:                          exit_price = nxt
+    # 3.e) If we have a nonzero signal, open a new trade at close[t]
+    entry_price = closes[t]
+    if signal > 0:
+        tp_level = entry_price * (1 + TAKE_PROFIT_PCT)
+        sl_level = entry_price * (1 - STOP_LOSS_PCT)
+    else:  # short
+        tp_level = entry_price * (1 - TAKE_PROFIT_PCT)
+        sl_level = entry_price * (1 + STOP_LOSS_PCT)
 
-        margin   = capital * RISK_PER_TRADE
-        notional = margin * LEVERAGE
-        units    = notional / entry
-        pnl      = units * ((exit_price-entry) if signal>0 else (entry-exit_price))
+    # We allocate risk and compute units once at entry time:
+    margin   = capital * RISK_PER_TRADE
+    notional = margin * LEVERAGE
+    units    = notional / entry_price
 
-        capital += pnl
-        trade_returns.append(pnl / margin)
+    # 3.f) Now scan forward, bar by bar, until TP or SL is hit,
+    #      or until we hit the end of our test period.
+    exit_price = None
+    exit_bar   = None
+    u = t + 1
+    while u < N_DATAPOINTS:
+        h = highs[u]
+        l = lows[u]
+        c = closes[u]
 
+        if signal > 0:
+            # LONG: check TP first, then SL
+            if h >= tp_level:
+                exit_price = tp_level
+                exit_bar   = u
+                break
+            elif l <= sl_level:
+                exit_price = sl_level
+                exit_bar   = u
+                break
+        else:
+            # SHORT: check TP first (price has to go down), then SL
+            if l <= tp_level:
+                exit_price = tp_level
+                exit_bar   = u
+                break
+            elif h >= sl_level:
+                exit_price = sl_level
+                exit_bar   = u
+                break
+
+        # If neither level was hit, move to next bar
+        u += 1
+
+    # 3.g) If we ran out of bars without hitting TP/SL, exit at final close
+    if exit_price is None:
+        exit_bar   = N_DATAPOINTS - 1
+        exit_price = closes[exit_bar]
+
+    # 3.h) Compute P&L and update capital
+    if signal > 0:
+        pnl = units * (exit_price - entry_price)
+    else:
+        pnl = units * (entry_price - exit_price)
+
+    capital += pnl
+    trade_returns.append(pnl / margin)
+
+    # 3.i) Fill equity_curve for each bar held:
+    #       - equity is flat up until exit_bar−1 (we already appended last equity on entry or previous)
+    #       - append one entry at exit_bar to reflect new capital
     equity_curve.append(capital)
 
+    # 3.j) Jump t to the bar after exit_bar
+    t = exit_bar + 1
+    # Note: prev_label remains as whatever label we last saw at time t
+
+# Convert equity_curve and trade_returns to numpy arrays
 equity_curve  = np.array(equity_curve)
 trade_returns = np.array(trade_returns)
 
 # -----------------------------------------------------------------------------
 # 4) Metrics & Reporting
 # -----------------------------------------------------------------------------
-test_labels     = labels[TRAIN_SIZE:]
-true_dirs_full  = np.sign(np.diff(test_labels))
-true_dirs       = true_dirs_full[WINDOW:]      # drop first WINDOW so lengths match
-pred_dirs       = np.array(signals_list)
+# (true_dirs and pred_dirs are already defined above)
+if len(true_dirs) != len(pred_dirs):
+    raise ValueError(f"Length mismatch: true_dirs={len(true_dirs)}, pred_dirs={len(pred_dirs)}")
 
 cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])
 print("=== Directional Accuracy ===")
