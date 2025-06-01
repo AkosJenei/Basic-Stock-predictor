@@ -55,11 +55,11 @@ This project is a modular Python pipeline designed for **quantized time series m
 - Uses the trained model to predict quantized class probabilities on test data.
 - Outputs predictions and can be extended to **evaluate model performance** and **simulate trading strategies**.
 - For the 4H timeframe I found these parameters to be succesful:
-    -N_DATAPOINTS = 2000
-    -N_TESTPOINTS = 500
-    -WINDOW = 3
-    -TP/SL = 0.002/0.002 (In real time, ATR might be better)
-    -N_BITS = 25
+    - N_DATAPOINTS = 2000
+    - N_TESTPOINTS = 500
+    - WINDOW = 3
+    - TP/SL = 0.002/0.002 (In real time, ATR might be better)
+    - N_BITS = 25
 ---
 
 ### What does it do?
