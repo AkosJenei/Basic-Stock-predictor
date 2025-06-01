@@ -71,3 +71,57 @@ This project is a modular Python pipeline designed for **quantized time series m
 - **Transforms raw financial data** into a **quantized categorical format** suitable for classification.
 - Trains a deep learning model (LSTM) to **learn temporal dependencies** and **predict future categories** in financial time series.
 - Provides a foundation for developing **probabilistic trading strategies**, **forecasting models**, or further research in **discretized financial modeling**.
+
+###Results:
+
+##With Take Profit and Stop Loss
+##XAUUSD(Gold/USD) First case
+**Confusion Matrix:
+![XAUUSD-conf-matrix-1](https://github.com/user-attachments/assets/9b79705c-a9f6-4880-a24b-2a1adba70a1f)
+
+**Equity curve:
+![XAUUSD-equity-1](https://github.com/user-attachments/assets/aceb0aff-96ce-48ad-abcb-83450329e8fc)
+
+**Drawdown curve:
+![XAUUSD-drawdown-1](https://github.com/user-attachments/assets/bbe861ea-9889-458e-a141-abaa285f4408)
+
+**Distribution of trades:
+![XAUUSD-dist-1](https://github.com/user-attachments/assets/16950681-9769-48f9-b031-215e66eea49a)
+
+##XAUUSD(Gold/USD) Second case
+**Confusion Matrix:
+![XAUUSD-conf-matrix-3](https://github.com/user-attachments/assets/023f6929-9302-4a6f-8745-bc080bd8bbff)
+
+**Equity curve:
+![XAUUSD-equity-3](https://github.com/user-attachments/assets/ec34d8a6-7c11-4a0e-ab9b-101730cf37de)
+
+**Drawdown curve:
+![XAUUSD-drawdown-3](https://github.com/user-attachments/assets/5a60d5b9-421b-436a-a881-fbfaf1b93351)
+
+**Distribution of trades:
+![XAUUSD-dist-3](https://github.com/user-attachments/assets/c8b6125f-d397-4145-b94b-16f4d1d4d0ad)
+
+##AUDCAD
+**Confusion Matrix:
+![AUDCAD-conf-matrix-1](https://github.com/user-attachments/assets/8fc7eea1-c77c-4242-95b5-ee1db40f37ca)
+**Equity curve:
+![AUDCAD-equity-1](https://github.com/user-attachments/assets/1e57961c-3f0d-4c23-b1a4-723bcbf65fc0)
+
+**Drawdown curve:
+![AUDCAD-drawdown-1](https://github.com/user-attachments/assets/2e140eaf-5254-44cf-955c-2da945fd9c9d)
+
+**Distribution of trades:
+![AUDCAD-dist-1](https://github.com/user-attachments/assets/8abe1efb-eb45-4905-9045-d0ebf489bc9d)
+
+##USDCHF
+**Confusion Matrix:
+![USDCHF-conf-matrix-1](https://github.com/user-attachments/assets/9e4c0b6d-cd92-49bc-a8be-3c8f46634dd7)
+
+**Equity curve:
+![USDCHF-equity-1](https://github.com/user-attachments/assets/02161844-6625-4c08-ba7d-02df2349c87f)
+
+**Drawdown curve:
+![USDCHF-drawdown-1](https://github.com/user-attachments/assets/703fd589-40f1-4d96-8546-9ba09f3c4f3b)
+
+**Distribution of trades:
+![USDCHF-dist-1](https://github.com/user-attachments/assets/0b1a5dc5-7040-4c8e-a2e0-0a3ff975e07f)
