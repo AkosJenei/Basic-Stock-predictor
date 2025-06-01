@@ -21,9 +21,9 @@ It includes:
 - **`train.py`** – Training script for fitting the model.
 - **`backtest.py`** – Model backtesting and evaluation script.
 
-##Research Context
+## Research Context
 
-This project was developed as part of ongoing research at the Budapest University of Technology and Economics (BME) in the field of Financial Computing. The goal is to explore novel approaches for quantizing financial time series and leveraging deep learning models for improved prediction and strategy development.
+This project was developed as part of one of my introduction research at the Budapest University of Technology and Economics (BME) in the field of Financial Computing. The goal is to explore novel approaches for quantizing financial time series and leveraging deep learning models for improved prediction and strategy development.
 
 ## Codebase Description
 
@@ -54,7 +54,12 @@ This project is a modular Python pipeline designed for **quantized time series m
 ### 6️⃣ Backtesting (`backtest.py`)
 - Uses the trained model to predict quantized class probabilities on test data.
 - Outputs predictions and can be extended to **evaluate model performance** and **simulate trading strategies**.
-
+- For the 4H timeframe I found these parameters to be succesful:
+    -N_DATAPOINTS = 2000
+    -N_TESTPOINTS = 500
+    -WINDOW = 3
+    -TP/SL = 0.002/0.002 (In real time, ATR might be better)
+    -N_BITS = 25
 ---
 
 ### What does it do?

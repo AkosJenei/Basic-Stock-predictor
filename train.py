@@ -13,15 +13,15 @@ from model import create_model, EarlyStopping
 # -----------------------------------------------------------------------------
 # Configurable parameters
 # -----------------------------------------------------------------------------
-CSV_PATH      = "historical_data/XAUUSD_1h_historical_data.csv"
-N_DATAPOINTS  = 50000    # total rows in this slice (train + holdout)
+CSV_PATH      = "historical_data/XAUUSD_4h_historical_data.csv"
+N_DATAPOINTS  = 2000    # total rows in this slice (train + holdout)
 N_TESTPOINTS  = 500     # last 500 for backtesting later
 WINDOW        = 3
 TEST_SIZE     = 0.2     # validation split within training slice
 BATCH_SIZE    = 64
 EPOCHS        = 100
-OFFSET        = 40000      # start row of our 5k-window in the full CSV
-N_BITS        = 300
+OFFSET        = 25000      # start row of our 5k-window in the full CSV
+N_BITS        = 25
 
 QUANTIZER_OUT = "quantizer.pkl"
 
