@@ -21,7 +21,7 @@ TEST_SIZE     = 0.2     # validation split within training slice
 BATCH_SIZE    = 64
 EPOCHS        = 100
 OFFSET        = 40000      # start row of our 5k-window in the full CSV
-N_BITS        = 500
+N_BITS        = 300
 
 QUANTIZER_OUT = "quantizer.pkl"
 

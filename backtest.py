@@ -14,7 +14,7 @@ CSV_PATH        = "historical_data/XAUUSD_1h_historical_data.csv"
 N_DATAPOINTS    = 50000    # total rows in this slice
 N_TESTPOINTS    = 500     # last 500 rows for backtest
 WINDOW          = 3
-OFFSET          = 40000       # start row of the 5k-slice in the full CSV
+OFFSET          = 49000       # start row of the 5k-slice in the full CSV
 
 INITIAL_CAP     = 5_000.0
 LEVERAGE        = 100.0
