@@ -74,11 +74,10 @@ This project is a modular Python pipeline designed for **quantized time series m
 
 ---
 
-### Results:
+# Results with Take Profit and Stop Loss:
 
-# With Take Profit and Stop Loss
-# XAUUSD(Gold/USD) First case
-**Confusion Matrix:
+## XAUUSD(Gold/USD) First case
+**Confusion Matrix:**
 ![XAUUSD-conf-matrix-1](https://github.com/user-attachments/assets/9b79705c-a9f6-4880-a24b-2a1adba70a1f)
 
 **Equity curve:**
