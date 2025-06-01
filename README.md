@@ -76,7 +76,7 @@ This project is a modular Python pipeline designed for **quantized time series m
 
 # Results with Take Profit and Stop Loss:
 
-## XAUUSD(Gold/USD) First case
+### XAUUSD(Gold/USD) First case
 **Confusion Matrix:**
 ![XAUUSD-conf-matrix-1](https://github.com/user-attachments/assets/9b79705c-a9f6-4880-a24b-2a1adba70a1f)
 
@@ -86,10 +86,10 @@ This project is a modular Python pipeline designed for **quantized time series m
 **Drawdown curve:**
 ![XAUUSD-drawdown-1](https://github.com/user-attachments/assets/bbe861ea-9889-458e-a141-abaa285f4408)
 
-** Distribution of trades:**
+**Distribution of trades:**
 ![XAUUSD-dist-1](https://github.com/user-attachments/assets/16950681-9769-48f9-b031-215e66eea49a)
 
-## XAUUSD(Gold/USD) Second case
+### XAUUSD(Gold/USD) Second case
 **Confusion Matrix:**
 ![XAUUSD-conf-matrix-3](https://github.com/user-attachments/assets/023f6929-9302-4a6f-8745-bc080bd8bbff)
 
@@ -102,7 +102,7 @@ This project is a modular Python pipeline designed for **quantized time series m
 **Distribution of trades:**
 ![XAUUSD-dist-3](https://github.com/user-attachments/assets/c8b6125f-d397-4145-b94b-16f4d1d4d0ad)
 
-## AUDCAD
+### AUDCAD
 **Confusion Matrix:**
 ![AUDCAD-conf-matrix-1](https://github.com/user-attachments/assets/8fc7eea1-c77c-4242-95b5-ee1db40f37ca)
 
@@ -115,15 +115,32 @@ This project is a modular Python pipeline designed for **quantized time series m
 **Distribution of trades:**
 ![AUDCAD-dist-1](https://github.com/user-attachments/assets/8abe1efb-eb45-4905-9045-d0ebf489bc9d)
 
-## USDCHF
+# Results with no Take Profit and Stop Loss:
+### XAUUSD(Gold/Usd) Third Case
 **Confusion Matrix:**
-![USDCHF-conf-matrix-1](https://github.com/user-attachments/assets/9e4c0b6d-cd92-49bc-a8be-3c8f46634dd7)
+![XAUUSD-cm-nosl-1](https://github.com/user-attachments/assets/894891ce-3ab4-4aa0-a637-bd5c14a5c4c2)
 
 **Equity curve:**
-![USDCHF-equity-1](https://github.com/user-attachments/assets/02161844-6625-4c08-ba7d-02df2349c87f)
+![XAUUSD-eq-nosl-1](https://github.com/user-attachments/assets/11edd12d-e537-4293-b259-ad7ef0006b5c)
 
 **Drawdown curve:**
-![USDCHF-drawdown-1](https://github.com/user-attachments/assets/703fd589-40f1-4d96-8546-9ba09f3c4f3b)
+![XAUUSD-drdown-nosl-1](https://github.com/user-attachments/assets/1e75ae61-9106-4f1e-842a-206755d71108)
 
 **Distribution of trades:**
-![USDCHF-dist-1](https://github.com/user-attachments/assets/0b1a5dc5-7040-4c8e-a2e0-0a3ff975e07f)
+![XAUUSD-dist-nosl-1](https://github.com/user-attachments/assets/2cf2e205-fcac-4ac5-bc8d-424510ccad58)
+
+### XAUUSD(Gold/Usd) Fourth Case
+**Confusion Matrix:**
+![XAUUSD-cm-nosl-2](https://github.com/user-attachments/assets/d132439f-5c0a-4764-be08-78d400f090a1)
+
+**Equity curve:**
+![XAUUSD-eq-nosl-2](https://github.com/user-attachments/assets/9635e2f7-5920-42f0-9b09-bc5b2bd37348)
+
+**Drawdown curve:**
+![XAUUSD-drdown-nosl-2](https://github.com/user-attachments/assets/ca8e39ca-5836-4e30-9196-38e453bc3375)
+
+**Distribution of trades:**
+![XAUUSD-dist-nosl-2](https://github.com/user-attachments/assets/8c27850c-915d-4f7b-80fc-f9f35743dcd5)
+
+
+
