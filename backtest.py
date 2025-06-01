@@ -1,5 +1,3 @@
-# backtest.py
-
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,48 +5,61 @@ from sklearn.metrics import confusion_matrix, classification_report
 from train import model
 from data_processing import DataProcessor
 
-# -----------------------------------------------------------------------------
-# Configurable parameters
-# -----------------------------------------------------------------------------
+"""
+Backtest configuration:
+- CSV_PATH: Path to historical data
+- N_DATAPOINTS: Number of rows to load for backtest
+- N_TESTPOINTS: Size of test window
+- WINDOW: Sequence window size for model input
+- OFFSET: Row offset to start loading data from
+- INITIAL_CAP: Starting capital for backtest
+- LEVERAGE: Trade leverage
+- RISK_PER_TRADE: % of capital risked per trade
+- STOP_LOSS_PCT, TAKE_PROFIT_PCT: SL/TP levels (percent)
+- QUANTIZER_PATH: Path to saved quantizer object
+"""
+
 CSV_PATH        = "historical_data/XAUUSD_4h_historical_data.csv"
-N_DATAPOINTS    = 2000    # total rows in this slice
-N_TESTPOINTS    = 500     # last 500 rows for backtest
+N_DATAPOINTS    = 2000
+N_TESTPOINTS    = 500
 WINDOW          = 3
-OFFSET          = 22000      # start row of the 5k-slice in the full CSV
+OFFSET          = 22000
 
 INITIAL_CAP     = 5_000.0
 LEVERAGE        = 100.0 
 RISK_PER_TRADE  = 0.30
-STOP_LOSS_PCT   = 1#0.002
-TAKE_PROFIT_PCT = 1#0.002
+STOP_LOSS_PCT   = 1
+TAKE_PROFIT_PCT = 1
 
 QUANTIZER_PATH  = "quantizer.pkl"
 
-# -----------------------------------------------------------------------------
-# 1) Load the 5k-row slice [OFFSET : OFFSET+5000]
-# -----------------------------------------------------------------------------
+"""
+Load a specific window of historical OHLCV data into a DataFrame.
+"""
 dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
 closes = df["Close"].values
 highs   = df["High"].values
 lows    = df["Low"].values
 
-# -----------------------------------------------------------------------------
-# 2) Load pre-fitted quantizer & transform closes → labels → one-hot
-# -----------------------------------------------------------------------------
+"""
+Apply the saved quantizer to map close prices to discrete labels.
+Encode labels into one-hot format for model input.
+"""
 with open(QUANTIZER_PATH, "rb") as f:
     quantizer = pickle.load(f)
 
 labels  = quantizer.transform(closes)
 one_hot = np.eye(quantizer.get_bits(), dtype=int)[labels]
 
-# split sizes
 TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
-start_idx  = TRAIN_SIZE + WINDOW   # first index where we backtest
+start_idx  = TRAIN_SIZE + WINDOW
 
-# -----------------------------------------------------------------------------
-# 3) Real-time backtest loop on last 500 rows
-# -----------------------------------------------------------------------------
+"""
+Simulate a real-time backtest over the test set.
+Predict signals bar by bar, execute trades with SL/TP logic.
+Update capital and track trade returns.
+"""
 capital       = INITIAL_CAP
 equity_curve  = [capital]
 trade_returns = []
@@ -60,7 +71,6 @@ for t in range(start_idx, N_DATAPOINTS - 1):
     y_prob = model.predict(X_in, verbose=0)[0]
     lbl    = int(np.argmax(y_prob))
 
-    # generate +1/−1/0 signal
     if prev_label is None:
         signal = 0
     else:
@@ -69,7 +79,6 @@ for t in range(start_idx, N_DATAPOINTS - 1):
     signals_list.append(signal)
     prev_label = lbl
 
-    # execute trade when signal ≠ 0
     if signal != 0:
         entry = closes[t]
         tp    = entry*(1+TAKE_PROFIT_PCT) if signal>0 else entry*(1-TAKE_PROFIT_PCT)
@@ -95,12 +104,15 @@ for t in range(start_idx, N_DATAPOINTS - 1):
 equity_curve  = np.array(equity_curve)
 trade_returns = np.array(trade_returns)
 
-# -----------------------------------------------------------------------------
-# 4) Metrics & Reporting
-# -----------------------------------------------------------------------------
+"""
+Calculate directional accuracy metrics:
+- Confusion matrix of predicted vs actual signals
+- Classification report
+- Cumulative return and max drawdown
+"""
 test_labels     = labels[TRAIN_SIZE:]
 true_dirs_full  = np.sign(np.diff(test_labels))
-true_dirs       = true_dirs_full[WINDOW:]      # drop first WINDOW so lengths match
+true_dirs       = true_dirs_full[WINDOW:]
 pred_dirs       = np.array(signals_list)
 
 cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])
@@ -116,9 +128,12 @@ print(f"\n=== Performance Summary ===")
 print(f"Cumulative Return: {cum_return:.2%}")
 print(f"Max Drawdown:     {max_dd:.2%}")
 
-# -----------------------------------------------------------------------------
-# 5) Plots
-# -----------------------------------------------------------------------------
+"""
+Visualize results:
+- Equity curve over time
+- Drawdown curve
+- Histogram of individual trade returns
+"""
 plt.figure(figsize=(10,4))
 plt.plot(equity_curve, label="Equity Curve for XAUUSD")
 plt.title("Equity Curve for XAUUSD"); plt.grid(); plt.legend()

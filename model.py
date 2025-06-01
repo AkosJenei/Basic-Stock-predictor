@@ -6,10 +6,12 @@ from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.keras.regularizers import l2
 
+# Patch TensorFlow data adapter to avoid distributed dataset check errors
 def _is_distributed_dataset(ds):
     return isinstance(ds, data_adapter.input_lib.DistributedDatasetSpec)
 data_adapter._is_distributed_dataset = _is_distributed_dataset
 
+# Create and return a compiled LSTM model
 def create_model(input_timesteps: int, n_classes: int) -> Sequential:
     model = Sequential([
         LSTM(256, activation="relu", input_shape=(input_timesteps, n_classes), return_sequences=True),
