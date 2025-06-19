@@ -1,9 +1,25 @@
 import numpy as np
 
+
 class Quantization:
-    def __init__(self, n_bits=25):
-        """Initialize the quantizer with a specified number of bins (n_bits)."""
+    def __init__(self, n_bits=25, bin_size=None):
+        """Initialize the quantizer.
+
+        Parameters
+        ----------
+        n_bits : int, optional
+            Number of quantization bins to use when ``bin_size`` is not
+            provided. Defaults to ``25`` to preserve existing behaviour.
+        bin_size : float, optional
+            Width of each bin. When supplied, ``n_bits`` will be ignored and
+            the number of bins will be computed during ``fit``.
+        """
+
+        if n_bits is None and bin_size is None:
+            raise ValueError("Either n_bits or bin_size must be specified")
+
         self.n_bits = n_bits
+        self.bin_size = bin_size
         self.bin_edges = None
 
     def get_bits(self):
@@ -11,19 +27,26 @@ class Quantization:
         return self.n_bits
 
     def fit(self, data):
+        """Compute bin edges from ``data``.
+
+        When ``bin_size`` is specified, bin edges are created at that fixed
+        interval. Otherwise the range ``[min, max]`` is divided into
+        ``n_bits`` equal-width bins.
         """
-        Compute the bin edges for quantization based on input data.
-        Divides the range [min, max] into equal-width intervals.
-        """
+
         data = np.asarray(data)
         data_min, data_max = data.min(), data.max()
-        self.bin_edges = np.linspace(data_min, data_max, self.n_bits + 1)
+
+        if self.bin_size is not None:
+            # Use explicit bin width
+            self.bin_edges = np.arange(data_min, data_max + self.bin_size, self.bin_size)
+            # Update n_bits based on the derived number of bins
+            self.n_bits = len(self.bin_edges) - 1
+        else:
+            self.bin_edges = np.linspace(data_min, data_max, self.n_bits + 1)
 
     def transform(self, data):
-        """
-        Quantize the input data into integer bin codes [0, n_bits-1].
-        Each data point is mapped to a bin based on its value.
-        """
+        """Quantize ``data`` into integer bin codes [0, ``n_bits``-1]."""
         if self.bin_edges is None:
             raise ValueError("Quantization bins not computed. Call fit() first.")
 
@@ -42,10 +65,7 @@ class Quantization:
         return self.transform(data)
 
     def inverse_transform(self, codes):
-        """
-        Convert quantized bin codes back to approximate continuous values (bin centers).
-        Returns the center of the corresponding bin for each code.
-        """
+        """Map integer codes back to approximate continuous values."""
         if self.bin_edges is None:
             raise ValueError("Quantization bins not computed. Call fit() first.")
 
