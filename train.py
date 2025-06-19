@@ -23,8 +23,8 @@ Configuration:
 """
 
 CSV_PATH      = "historical_data/XAUUSD_4h_historical_data.csv"
-N_DATAPOINTS  = 2000
-N_TESTPOINTS  = 500
+N_DATAPOINTS  = 30000
+N_TESTPOINTS  = 2000
 WINDOW        = 3
 TEST_SIZE     = 0.2
 BATCH_SIZE    = 64
@@ -45,7 +45,7 @@ closes = dp.get_close_prices()
 Fit quantizer on training data and transform the full dataset.
 """
 TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
-quantizer = Quantization(n_bits=N_BITS)
+quantizer = Quantization(n_bits=N_BITS, bin_size=0.5)
 quantizer.fit(closes[:TRAIN_SIZE])
 num_classes = quantizer.get_bits()
 
