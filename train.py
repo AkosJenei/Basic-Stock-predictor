@@ -45,8 +45,9 @@ closes = dp.get_close_prices()
 Fit quantizer on training data and transform the full dataset.
 """
 TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
-quantizer  = Quantization(n_bits=N_BITS)
+quantizer = Quantization(n_bits=N_BITS)
 quantizer.fit(closes[:TRAIN_SIZE])
+num_classes = quantizer.get_bits()
 
 labels = quantizer.transform(closes)
 
@@ -56,7 +57,7 @@ with open(QUANTIZER_OUT, "wb") as f:
 """
 Prepare one-hot encoded sequences and labels for model training.
 """
-one_hot       = np.eye(N_BITS, dtype=int)[labels[:TRAIN_SIZE]]
+one_hot = np.eye(num_classes, dtype=int)[labels[:TRAIN_SIZE]]
 labels_train  = labels[:TRAIN_SIZE]
 
 xy = x_y_arrays(
@@ -65,7 +66,8 @@ xy = x_y_arrays(
     n=WINDOW,
     test_size=TEST_SIZE,
     shuffle=True,
-    random_state=42
+    random_state=42,
+    num_classes=num_classes
 )
 X_train, X_val, Y_train, Y_val = xy.get_train_test()
 print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
@@ -73,7 +75,7 @@ print(f"X_train shape: {X_train.shape}, Y_train shape: {Y_train.shape}")
 """
 Define LSTM model, configure early stopping, and train.
 """
-model = create_model(input_timesteps=WINDOW, n_classes=N_BITS)
+model = create_model(input_timesteps=WINDOW, n_classes=num_classes)
 early = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
 
 history = model.fit(
@@ -95,7 +97,7 @@ y_true  = np.argmax(Y_val, axis=1)
 acc = accuracy_score(y_true, y_pred)
 print(f"\nValidation accuracy: {acc:.4f}\n")
 
-all_labels = np.arange(N_BITS)
+all_labels = np.arange(num_classes)
 conf_mat = confusion_matrix(y_true, y_pred, labels=all_labels)
 print("Confusion Matrix:")
 print(conf_mat, "\n")

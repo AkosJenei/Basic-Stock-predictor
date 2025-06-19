@@ -9,16 +9,36 @@ class x_y_arrays:
     Handles sequence generation, one-hot encoding, and train-test splitting.
     """
 
-    def __init__(self, df, target, n=3, test_size=0.2, shuffle=False, random_state=42):
+    def __init__(
+        self,
+        df,
+        target,
+        n=3,
+        test_size=0.2,
+        shuffle=False,
+        random_state=42,
+        num_classes=None,
+    ):
         """
         Initialize the x_y_arrays object.
 
-        df: input features (one-hot encoded or continuous)
-        target: target labels
-        n: sequence window size
-        test_size: proportion of data to hold out for testing
-        shuffle: whether to shuffle the train-test split
-        random_state: random seed for reproducibility
+        Parameters
+        ----------
+        df : array-like
+            Input features (one-hot encoded or continuous).
+        target : array-like
+            Target labels.
+        n : int
+            Sequence window size.
+        test_size : float
+            Proportion of data to hold out for testing.
+        shuffle : bool
+            Whether to shuffle the train-test split.
+        random_state : int
+            Random seed for reproducibility.
+        num_classes : int, optional
+            Number of classes for one-hot encoding of labels. If ``None`` the
+            default from :class:`Quantization` will be used.
         """
         self.X = self.create_sequences(df, n)
         self.Y = np.asarray(target)[n:]       
@@ -26,9 +46,10 @@ class x_y_arrays:
         if len(self.X) != len(self.Y):
             raise ValueError(f"Mismatch: X has {len(self.X)} samples but Y has {len(self.Y)}")
 
-        bits = Quantization().get_bits()
+        if num_classes is None:
+            num_classes = Quantization().get_bits()
 
-        self.Y = to_categorical(self.Y, num_classes=bits)
+        self.Y = to_categorical(self.Y, num_classes=num_classes)
 
         self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(
             self.X,
