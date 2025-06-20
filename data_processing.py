@@ -34,6 +34,11 @@ class DataProcessor:
         """
         return self.dataframe["Close"].values
 
+    def get_price_changes(self):
+        """Return array of 1-step close price differences."""
+        closes = self.get_close_prices()
+        return closes[1:] - closes[:-1]
+
     def add_quantized_labels(self, n_bits: int = 50):
         """
         Quantize the 'Close' column into `n_bits` categories.
