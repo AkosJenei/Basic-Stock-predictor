@@ -19,6 +19,7 @@ Configuration:
 - EPOCHS: Training epochs
 - OFFSET: Data window starting row
 - N_BITS: Quantization levels
+- BIN_SIZE: Quantization bin width (in currency units)
 - QUANTIZER_OUT: Saved quantizer file
 """
 
@@ -31,6 +32,7 @@ BATCH_SIZE    = 64
 EPOCHS        = 100
 OFFSET        = 22000
 N_BITS        = 25
+BIN_SIZE     = 0.1
 
 QUANTIZER_OUT = "quantizer.pkl"
 
@@ -40,16 +42,17 @@ Load a segment of historical OHLCV data into a DataFrame.
 dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
 closes = dp.get_close_prices()
+price_changes = dp.get_price_changes()
 
 """
 Fit quantizer on training data and transform the full dataset.
 """
-TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
-quantizer = Quantization(n_bits=N_BITS, bin_size=0.5)
-quantizer.fit(closes[:TRAIN_SIZE])
+TRAIN_SIZE = len(price_changes) - N_TESTPOINTS
+quantizer = Quantization(bin_size=BIN_SIZE)
+quantizer.fit(price_changes[:TRAIN_SIZE])
 num_classes = quantizer.get_bits()
 
-labels = quantizer.transform(closes)
+labels = quantizer.transform(price_changes)
 
 with open(QUANTIZER_OUT, "wb") as f:
     pickle.dump(quantizer, f)

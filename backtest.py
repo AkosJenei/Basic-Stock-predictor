@@ -38,21 +38,22 @@ Load a specific window of historical OHLCV data into a DataFrame.
 """
 dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
-closes = df["Close"].values
-highs   = df["High"].values
-lows    = df["Low"].values
+closes        = df["Close"].values
+price_changes = dp.get_price_changes()
+highs         = df["High"].values
+lows          = df["Low"].values
 
 """
-Apply the saved quantizer to map close prices to discrete labels.
+Apply the saved quantizer to map price changes to discrete labels.
 Encode labels into one-hot format for model input.
 """
 with open(QUANTIZER_PATH, "rb") as f:
     quantizer = pickle.load(f)
 
-labels  = quantizer.transform(closes)
+labels  = quantizer.transform(price_changes)
 one_hot = np.eye(quantizer.get_bits(), dtype=int)[labels]
 
-TRAIN_SIZE = N_DATAPOINTS - N_TESTPOINTS
+TRAIN_SIZE = len(labels) - N_TESTPOINTS
 start_idx  = TRAIN_SIZE + WINDOW
 
 """
@@ -64,20 +65,16 @@ capital       = INITIAL_CAP
 equity_curve  = [capital]
 trade_returns = []
 signals_list  = []
-prev_label    = None
 
-for t in range(start_idx, N_DATAPOINTS - 1):
+for t in range(start_idx, len(labels)):
     X_in   = one_hot[t-WINDOW:t][np.newaxis, :, :]
     y_prob = model.predict(X_in, verbose=0)[0]
     lbl    = int(np.argmax(y_prob))
 
-    if prev_label is None:
-        signal = 0
-    else:
-        signal = +1 if lbl > prev_label else -1 if lbl < prev_label else 0
+    return_val = quantizer.inverse_transform([lbl])[0]
+    signal     = int(np.sign(return_val))
 
     signals_list.append(signal)
-    prev_label = lbl
 
     if signal != 0:
         entry = closes[t]
@@ -110,9 +107,10 @@ Calculate directional accuracy metrics:
 - Classification report
 - Cumulative return and max drawdown
 """
-test_labels     = labels[TRAIN_SIZE:]
-true_dirs_full  = np.sign(np.diff(test_labels))
-true_dirs       = true_dirs_full[WINDOW:]
+test_labels    = labels[TRAIN_SIZE:]
+returns_test   = quantizer.inverse_transform(test_labels)
+true_dirs_full = np.sign(returns_test)
+true_dirs      = true_dirs_full[WINDOW:]
 pred_dirs       = np.array(signals_list)
 
 cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])
