@@ -17,6 +17,7 @@ Backtest configuration:
 - RISK_PER_TRADE: % of capital risked per trade
 - STOP_LOSS_PCT, TAKE_PROFIT_PCT: SL/TP levels (percent)
 - QUANTIZER_PATH: Path to saved quantizer object
+- USE_PRICE_CHANGES: Use price returns rather than close prices if True
 """
 
 CSV_PATH        = "historical_data/XAUUSD_4h_historical_data.csv"
@@ -31,6 +32,8 @@ RISK_PER_TRADE  = 0.30
 STOP_LOSS_PCT   = 1
 TAKE_PROFIT_PCT = 1
 
+USE_PRICE_CHANGES = True  # match setting used during training
+
 QUANTIZER_PATH  = "quantizer.pkl"
 
 """
@@ -43,14 +46,16 @@ price_changes = dp.get_price_changes()
 highs         = df["High"].values
 lows          = df["Low"].values
 
+series = price_changes if USE_PRICE_CHANGES else closes
+
 """
-Apply the saved quantizer to map price changes to discrete labels.
+Apply the saved quantizer to map the chosen target series to discrete labels.
 Encode labels into one-hot format for model input.
 """
 with open(QUANTIZER_PATH, "rb") as f:
     quantizer = pickle.load(f)
 
-labels  = quantizer.transform(price_changes)
+labels  = quantizer.transform(series)
 one_hot = np.eye(quantizer.get_bits(), dtype=int)[labels]
 
 TRAIN_SIZE = len(labels) - N_TESTPOINTS
@@ -65,14 +70,22 @@ capital       = INITIAL_CAP
 equity_curve  = [capital]
 trade_returns = []
 signals_list  = []
+prev_label    = None
 
 for t in range(start_idx, len(labels)):
     X_in   = one_hot[t-WINDOW:t][np.newaxis, :, :]
     y_prob = model.predict(X_in, verbose=0)[0]
     lbl    = int(np.argmax(y_prob))
 
-    return_val = quantizer.inverse_transform([lbl])[0]
-    signal     = int(np.sign(return_val))
+    if USE_PRICE_CHANGES:
+        return_val = quantizer.inverse_transform([lbl])[0]
+        signal     = int(np.sign(return_val))
+    else:
+        if prev_label is None:
+            signal = 0
+        else:
+            signal = +1 if lbl > prev_label else -1 if lbl < prev_label else 0
+        prev_label = lbl
 
     signals_list.append(signal)
 
@@ -107,10 +120,13 @@ Calculate directional accuracy metrics:
 - Classification report
 - Cumulative return and max drawdown
 """
-test_labels    = labels[TRAIN_SIZE:]
-returns_test   = quantizer.inverse_transform(test_labels)
-true_dirs_full = np.sign(returns_test)
-true_dirs      = true_dirs_full[WINDOW:]
+test_labels  = labels[TRAIN_SIZE:]
+test_series  = series[TRAIN_SIZE:]
+if USE_PRICE_CHANGES:
+    true_dirs_full = np.sign(test_series)
+else:
+    true_dirs_full = np.sign(np.diff(test_series, prepend=test_series[0]))
+true_dirs    = true_dirs_full[WINDOW:]
 pred_dirs       = np.array(signals_list)
 
 cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])

@@ -21,6 +21,7 @@ Configuration:
 - N_BITS: Quantization levels
 - BIN_SIZE: Quantization bin width (in currency units)
 - QUANTIZER_OUT: Saved quantizer file
+- USE_PRICE_CHANGES: If True, quantize 1-step price returns instead of closes
 """
 
 CSV_PATH      = "historical_data/XAUUSD_4h_historical_data.csv"
@@ -32,7 +33,8 @@ BATCH_SIZE    = 64
 EPOCHS        = 100
 OFFSET        = 22000
 N_BITS        = 25
-BIN_SIZE     = 0.1
+BIN_SIZE      = 0.1
+USE_PRICE_CHANGES = True  # Toggle between price or return quantization
 
 QUANTIZER_OUT = "quantizer.pkl"
 
@@ -41,18 +43,20 @@ Load a segment of historical OHLCV data into a DataFrame.
 """
 dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
-closes = dp.get_close_prices()
+closes        = dp.get_close_prices()
 price_changes = dp.get_price_changes()
+
+series = price_changes if USE_PRICE_CHANGES else closes
 
 """
 Fit quantizer on training data and transform the full dataset.
 """
-TRAIN_SIZE = len(price_changes) - N_TESTPOINTS
+TRAIN_SIZE = (len(series) if USE_PRICE_CHANGES else N_DATAPOINTS) - N_TESTPOINTS
 quantizer = Quantization(bin_size=BIN_SIZE)
-quantizer.fit(price_changes[:TRAIN_SIZE])
+quantizer.fit(series[:TRAIN_SIZE])
 num_classes = quantizer.get_bits()
 
-labels = quantizer.transform(price_changes)
+labels = quantizer.transform(series)
 
 with open(QUANTIZER_OUT, "wb") as f:
     pickle.dump(quantizer, f)
