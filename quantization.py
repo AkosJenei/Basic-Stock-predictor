@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 
 class Quantization:
@@ -73,3 +74,14 @@ class Quantization:
         centers = (self.bin_edges[:-1] + self.bin_edges[1:]) / 2.0
         codes = np.clip(codes, 0, self.n_bits - 1)
         return centers[codes]
+
+
+def build_codebook(n_bins: int) -> np.ndarray:
+    """Return an L x M codebook splitting bins hierarchically."""
+    L = int(math.ceil(math.log2(n_bins)))
+    S = np.empty((L, n_bins), dtype=np.float32)
+    for m in range(n_bins):
+        for l in range(L):
+            bit = (m >> (L - l - 1)) & 1
+            S[l, m] = 1.0 if bit == 0 else -1.0
+    return S
