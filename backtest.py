@@ -1,166 +1,59 @@
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, classification_report
+
 from train import model
 from data_processing import DataProcessor
+from quantization import build_codebook
 
-"""
-Backtest configuration:
-- CSV_PATH: Path to historical data
-- N_DATAPOINTS: Number of rows to load for backtest
-- N_TESTPOINTS: Size of test window
-- WINDOW: Sequence window size for model input
-- OFFSET: Row offset to start loading data from
-- INITIAL_CAP: Starting capital for backtest
-- LEVERAGE: Trade leverage
-- RISK_PER_TRADE: % of capital risked per trade
-- STOP_LOSS_PCT, TAKE_PROFIT_PCT: SL/TP levels (percent)
-- QUANTIZER_PATH: Path to saved quantizer object
-- USE_PRICE_CHANGES: Use price returns rather than close prices if True
-"""
+CSV_PATH = "historical_data/AUDCHF_15m_historical_data.csv"
+N_DATAPOINTS = 500
+N_TESTPOINTS = 300
+WINDOW = 3
+OFFSET = 71500
+INITIAL_CAP = 10_000.0
+QUANTIZER_PATH = "quantizer.pkl"
+USE_PRICE_CHANGES = False
 
-CSV_PATH        = "historical_data/AUDCHF_15m_historical_data.csv"
-N_DATAPOINTS    = 500
-N_TESTPOINTS    = 300
-WINDOW          = 3
-OFFSET          = 71500
-
-INITIAL_CAP     = 5_000.0
-LEVERAGE        = 100.0 
-RISK_PER_TRADE  = 0.30
-STOP_LOSS_PCT   = 1
-TAKE_PROFIT_PCT = 1
-
-USE_PRICE_CHANGES = False  # match setting used during training
-
-QUANTIZER_PATH  = "quantizer.pkl"
-
-"""
-Load a specific window of historical OHLCV data into a DataFrame.
-"""
+# Load data
 dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
-closes        = df["Close"].values
+closes = df["Close"].values
 price_changes = dp.get_price_changes()
-highs         = df["High"].values
-lows          = df["Low"].values
-
 series = price_changes if USE_PRICE_CHANGES else closes
 
-"""
-Apply the saved quantizer to map the chosen target series to discrete labels.
-Encode labels into one-hot format for model input.
-"""
+# Load quantizer and labels
 with open(QUANTIZER_PATH, "rb") as f:
     quantizer = pickle.load(f)
+labels = quantizer.transform(series)
+M = quantizer.get_bits()
+S = build_codebook(M)
 
-labels  = quantizer.transform(series)
-one_hot = np.eye(quantizer.get_bits(), dtype=int)[labels]
+one_hot = np.eye(M, dtype=np.float32)[labels]
+start_idx = len(labels) - N_TESTPOINTS
 
-TRAIN_SIZE = len(labels) - N_TESTPOINTS
-start_idx  = TRAIN_SIZE + WINDOW
+capital = INITIAL_CAP
+equity_curve = [capital]
 
-"""
-Simulate a real-time backtest over the test set.
-Predict signals bar by bar, execute trades with SL/TP logic.
-Update capital and track trade returns.
-"""
-capital       = INITIAL_CAP
-equity_curve  = [capital]
-trade_returns = []
-signals_list  = []
-prev_label    = None
-
-for t in range(start_idx, len(labels)-1):
-    X_in   = one_hot[t-WINDOW:t][np.newaxis, :, :]
-    y_prob = model.predict(X_in, verbose=0)[0]
-    lbl    = int(np.argmax(y_prob))
-
-    if USE_PRICE_CHANGES:
-        return_val = quantizer.inverse_transform([lbl])[0]
-        signal     = int(np.sign(return_val))
+for t in range(start_idx, len(labels) - 1):
+    x_in = one_hot[t-WINDOW:t].reshape(1, -1)
+    out = model.predict(x_in, verbose=0)[0]
+    bits = np.where(out >= 0, 1, -1)
+    curr_label = labels[t]
+    in_lower = S[0, curr_label] == 1
+    if np.all(bits == -1) and in_lower:
+        pos = 1
+    elif np.all(bits == 1) and not in_lower:
+        pos = -1
     else:
-        if prev_label is None:
-            signal = 0
-        else:
-            signal = +1 if lbl > prev_label else -1 if lbl < prev_label else 0
-        prev_label = lbl
-
-    signals_list.append(signal)
-
-    if signal != 0:
-        entry = closes[t]
-        tp    = entry*(1+TAKE_PROFIT_PCT) if signal>0 else entry*(1-TAKE_PROFIT_PCT)
-        sl    = entry*(1-STOP_LOSS_PCT)   if signal>0 else entry*(1+STOP_LOSS_PCT)
-
-        hi, lo, nxt = highs[t+1], lows[t+1], closes[t+1]
-        if   signal>0 and hi  >= tp: exit_price = tp
-        elif signal<0 and lo  <= tp: exit_price = tp
-        elif signal>0 and lo  <= sl: exit_price = sl
-        elif signal<0 and hi  >= sl: exit_price = sl
-        else:                          exit_price = nxt
-
-        margin   = capital * RISK_PER_TRADE
-        notional = margin * LEVERAGE
-        units    = notional / entry
-        pnl      = units * ((exit_price-entry) if signal>0 else (entry-exit_price))
-
-        capital += pnl
-        trade_returns.append(pnl / margin)
-
+        pos = 0
+    pnl = (closes[t+1] - closes[t]) * pos
+    capital += pnl
     equity_curve.append(capital)
 
-equity_curve  = np.array(equity_curve)
-trade_returns = np.array(trade_returns)
-
-"""
-Calculate directional accuracy metrics:
-- Confusion matrix of predicted vs actual signals
-- Classification report
-- Cumulative return and max drawdown
-"""
-test_labels  = labels[TRAIN_SIZE:]
-test_series  = series[TRAIN_SIZE:]
-if USE_PRICE_CHANGES:
-    true_dirs_full = np.sign(test_series)
-else:
-    true_dirs_full = np.sign(np.diff(test_series, prepend=test_series[0]))
-true_dirs    = true_dirs_full[WINDOW:]
-pred_dirs       = np.array(signals_list)
-
-true_dirs = true_dirs[:len(pred_dirs)]
-
-cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])
-print("=== Directional Accuracy ===")
-print("Confusion Matrix (-1,0,+1):")
-print(cm)
-print("\nClassification Report:")
-print(classification_report(true_dirs, pred_dirs, labels=[-1,0,1]))
-
-cum_return = equity_curve[-1]/INITIAL_CAP - 1
-max_dd     = (equity_curve/np.maximum.accumulate(equity_curve) - 1).min()
-print(f"\n=== Performance Summary ===")
-print(f"Cumulative Return: {cum_return:.2%}")
-print(f"Max Drawdown:     {max_dd:.2%}")
-
-"""
-Visualize results:
-- Equity curve over time
-- Drawdown curve
-- Histogram of individual trade returns
-"""
-plt.figure(figsize=(10,4))
-plt.plot(equity_curve, label="Equity Curve for XAUUSD")
-plt.title("Equity Curve for XAUUSD"); plt.grid(); plt.legend()
-
-plt.figure(figsize=(10,4))
-plt.plot(equity_curve/np.maximum.accumulate(equity_curve) - 1,
-         color="red", label="Drawdown for XAUUSD")
-plt.title("Drawdown Curve for XAUUSD"); plt.grid(); plt.legend()
-
-plt.figure(figsize=(8,4))
-plt.hist(trade_returns, bins=50)
-plt.title("Distribution of Trade Returns for XAUUSD"); plt.grid()
-
+plt.figure(figsize=(10, 4))
+plt.plot(equity_curve)
+plt.title("Equity Curve")
+plt.grid()
 plt.show()
+
