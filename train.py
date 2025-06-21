@@ -24,17 +24,17 @@ Configuration:
 - USE_PRICE_CHANGES: If True, quantize 1-step price returns instead of closes
 """
 
-CSV_PATH      = "historical_data/XAUUSD_4h_historical_data.csv"
-N_DATAPOINTS  = 30000
-N_TESTPOINTS  = 2000
+CSV_PATH      = "historical_data/AUDCHF_15m_historical_data.csv"
+N_DATAPOINTS  = 500
+N_TESTPOINTS  = 300
 WINDOW        = 3
 TEST_SIZE     = 0.2
 BATCH_SIZE    = 64
 EPOCHS        = 100
-OFFSET        = 22000
+OFFSET        = 71500
 N_BITS        = 25
-BIN_SIZE      = 0.1
-USE_PRICE_CHANGES = True  # Toggle between price or return quantization
+BIN_SIZE      = 0.001
+USE_PRICE_CHANGES = False  # Toggle between price or return quantization
 
 QUANTIZER_OUT = "quantizer.pkl"
 
@@ -45,6 +45,8 @@ dp = DataProcessor()
 df = dp.read_csv(CSV_PATH, n_points=N_DATAPOINTS, offset=OFFSET)
 closes        = dp.get_close_prices()
 price_changes = dp.get_price_changes()
+
+print(min(price_changes))
 
 series = price_changes if USE_PRICE_CHANGES else closes
 
@@ -115,6 +117,7 @@ print(classification_report(y_true, y_pred, labels=all_labels, digits=4))
 """
 Visualize the confusion matrix as a heatmap.
 """
+
 plt.figure(figsize=(8, 6))
 plt.imshow(conf_mat, aspect='auto')
 plt.title('Confusion Matrix')
@@ -123,3 +126,4 @@ plt.ylabel('True Label')
 plt.colorbar()
 plt.tight_layout()
 plt.show()
+

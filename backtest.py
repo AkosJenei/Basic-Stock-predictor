@@ -20,11 +20,11 @@ Backtest configuration:
 - USE_PRICE_CHANGES: Use price returns rather than close prices if True
 """
 
-CSV_PATH        = "historical_data/XAUUSD_4h_historical_data.csv"
-N_DATAPOINTS    = 2000
-N_TESTPOINTS    = 500
+CSV_PATH        = "historical_data/AUDCHF_15m_historical_data.csv"
+N_DATAPOINTS    = 500
+N_TESTPOINTS    = 300
 WINDOW          = 3
-OFFSET          = 22000
+OFFSET          = 71500
 
 INITIAL_CAP     = 5_000.0
 LEVERAGE        = 100.0 
@@ -32,7 +32,7 @@ RISK_PER_TRADE  = 0.30
 STOP_LOSS_PCT   = 1
 TAKE_PROFIT_PCT = 1
 
-USE_PRICE_CHANGES = True  # match setting used during training
+USE_PRICE_CHANGES = False  # match setting used during training
 
 QUANTIZER_PATH  = "quantizer.pkl"
 
@@ -72,7 +72,7 @@ trade_returns = []
 signals_list  = []
 prev_label    = None
 
-for t in range(start_idx, len(labels)):
+for t in range(start_idx, len(labels)-1):
     X_in   = one_hot[t-WINDOW:t][np.newaxis, :, :]
     y_prob = model.predict(X_in, verbose=0)[0]
     lbl    = int(np.argmax(y_prob))
@@ -128,6 +128,8 @@ else:
     true_dirs_full = np.sign(np.diff(test_series, prepend=test_series[0]))
 true_dirs    = true_dirs_full[WINDOW:]
 pred_dirs       = np.array(signals_list)
+
+true_dirs = true_dirs[:len(pred_dirs)]
 
 cm = confusion_matrix(true_dirs, pred_dirs, labels=[-1,0,1])
 print("=== Directional Accuracy ===")
